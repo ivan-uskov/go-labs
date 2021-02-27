@@ -1,4 +1,4 @@
-package model
+package orderservice
 
 type Order struct {
 	ID        string     `json:"id"`

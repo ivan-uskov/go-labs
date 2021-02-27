@@ -4,7 +4,7 @@ import (
 	"context"
 	log "github.com/sirupsen/logrus"
 	"net/http"
-	"orderservice/transport"
+	"orderservice/pkg/orderservice"
 	"os"
 	"os/signal"
 	"syscall"
@@ -41,7 +41,7 @@ func waitForKillSignal(ch <-chan os.Signal) {
 
 func startServer(serverUrl string) *http.Server {
 	log.WithFields(log.Fields{"url": serverUrl}).Info("starting the server")
-	router := transport.Router()
+	router := orderservice.Router()
 	srv := &http.Server{Addr: serverUrl, Handler: router}
 	go func() {
 		log.Fatal(srv.ListenAndServe())

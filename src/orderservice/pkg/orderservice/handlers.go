@@ -1,4 +1,4 @@
-package transport
+package orderservice
 
 import (
 	"encoding/json"
@@ -6,18 +6,20 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"net/http"
-	"orderservice/model"
 	"time"
 )
 
 func helloWorld(w http.ResponseWriter, _ *http.Request) {
-	fmt.Fprint(w, "hello-world")
+	_, err := fmt.Fprint(w, "hello-world")
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 func orders(w http.ResponseWriter, _ *http.Request) {
-	orders := model.OrdersList{
-		Orders: []model.Order{
-			{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", MenuItems: []model.MenuItem{{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", Quantity: 0}}},
+	orders := OrdersList{
+		Orders: []Order{
+			{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", MenuItems: []MenuItem{{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", Quantity: 0}}},
 		},
 	}
 
@@ -42,8 +44,8 @@ func order(w http.ResponseWriter, r *http.Request) {
 	id, found := mux.Vars(r)["ID"]
 	if found {
 		if id == "3fa85f64-5717-4562-b3fc-2c963f66afa6" {
-			order := model.OrderDetails{
-				Order: model.Order{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", MenuItems: []model.MenuItem{{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", Quantity: 0}}},
+			order := OrderDetails{
+				Order: Order{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", MenuItems: []MenuItem{{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", Quantity: 0}}},
 				Cost:  1,
 				Time:  1,
 			}
@@ -54,7 +56,10 @@ func order(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNotFound)
-	fmt.Fprint(w, "Not found")
+	_, err := fmt.Fprint(w, "Not found")
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 func logMiddleware(h http.Handler) http.Handler {

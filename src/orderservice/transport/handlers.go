@@ -43,7 +43,7 @@ func order(w http.ResponseWriter, r *http.Request) {
 	if found {
 		if id == "3fa85f64-5717-4562-b3fc-2c963f66afa6" {
 			order := model.OrderDetails{
-				Order: model.Order{"3fa85f64-5717-4562-b3fc-2c963f66afa6", []model.MenuItem{{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", Quantity: 0}}},
+				Order: model.Order{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", MenuItems: []model.MenuItem{{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", Quantity: 0}}},
 				Cost:  1,
 				Time:  1,
 			}

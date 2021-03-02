@@ -66,7 +66,7 @@ func logMiddleware(h http.Handler) http.Handler {
 			"url":        r.URL,
 			"remoteAddr": r.RemoteAddr,
 			"userAgent":  r.UserAgent(),
-			"duration":   time.Now().Sub(startTime).String(),
+			"duration":   time.Since(startTime).String(),
 			"at":         startTime,
 		}).Info("got request")
 	})

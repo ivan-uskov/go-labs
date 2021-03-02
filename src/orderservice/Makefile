@@ -1,7 +1,7 @@
 all: modules check test run
 
 run: modules
-	go run main.go
+	go run cmd/orderservice/main.go
 
 modules:
 	go mod tidy

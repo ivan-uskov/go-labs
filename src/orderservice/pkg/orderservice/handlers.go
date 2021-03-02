@@ -23,12 +23,7 @@ func orders(w http.ResponseWriter, _ *http.Request) {
 		},
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(orders); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	renderJson(w, orders)
 }
 
 func renderJson(w http.ResponseWriter, v interface{}) {
@@ -64,14 +59,16 @@ func order(w http.ResponseWriter, r *http.Request) {
 
 func logMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		startTime := time.Now()
+		h.ServeHTTP(w, r)
 		log.WithFields(log.Fields{
 			"method":     r.Method,
 			"url":        r.URL,
 			"remoteAddr": r.RemoteAddr,
 			"userAgent":  r.UserAgent(),
-			"time":       time.Now().Format(time.RFC3339),
+			"duration":   time.Now().Sub(startTime).String(),
+			"at":         startTime,
 		}).Info("got request")
-		h.ServeHTTP(w, r)
 	})
 }
 

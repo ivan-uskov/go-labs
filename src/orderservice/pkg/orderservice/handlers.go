@@ -17,30 +17,21 @@ func helloWorld(w http.ResponseWriter, _ *http.Request) {
 }
 
 func orders(w http.ResponseWriter, _ *http.Request) {
-	orders := OrdersList{
-		Orders: []Order{
-			{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", MenuItems: []MenuItem{{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", Quantity: 0}}},
+	orders := ordersList{
+		Orders: []order{
+			{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", MenuItems: []menuItem{{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", Quantity: 0}}},
 		},
 	}
 
 	renderJson(w, orders)
 }
 
-func renderJson(w http.ResponseWriter, v interface{}) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(v); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
-func order(w http.ResponseWriter, r *http.Request) {
+func orderInfo(w http.ResponseWriter, r *http.Request) {
 	id, found := mux.Vars(r)["ID"]
 	if found {
 		if id == "3fa85f64-5717-4562-b3fc-2c963f66afa6" {
-			order := OrderDetails{
-				Order: Order{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", MenuItems: []MenuItem{{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", Quantity: 0}}},
+			order := orderDetails{
+				order: order{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", MenuItems: []menuItem{{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", Quantity: 0}}},
 				Cost:  1,
 				Time:  1,
 			}
@@ -54,6 +45,15 @@ func order(w http.ResponseWriter, r *http.Request) {
 	_, err := fmt.Fprint(w, "Not found")
 	if err != nil {
 		log.Error(err)
+	}
+}
+
+func renderJson(w http.ResponseWriter, v interface{}) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -77,7 +77,7 @@ func Router() http.Handler {
 	s := r.PathPrefix("/api/v1").Subrouter()
 	s.HandleFunc("/hello-world", helloWorld).Methods(http.MethodGet)
 	s.HandleFunc("/orders", orders).Methods(http.MethodGet)
-	s.HandleFunc("/order/{ID:[0-9a-zA-Z]+}", order).Methods(http.MethodGet)
+	s.HandleFunc("/orderInfo/{ID:[0-9a-zA-Z]+}", orderInfo).Methods(http.MethodGet)
 
 	return logMiddleware(r)
 }

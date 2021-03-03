@@ -22,7 +22,7 @@ func TestOrders(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	items := OrdersList{}
+	items := ordersList{}
 	if err = json.Unmarshal(jsonString, &items); err != nil {
 		t.Errorf("Can't parse json: %s response with error %v", jsonString, err)
 	}

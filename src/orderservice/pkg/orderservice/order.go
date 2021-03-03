@@ -1,21 +1,21 @@
 package orderservice
 
-type Order struct {
+type order struct {
 	ID        string     `json:"id"`
-	MenuItems []MenuItem `json:"menuItems"`
+	MenuItems []menuItem `json:"menuItems"`
 }
 
-type OrderDetails struct {
-	Order
+type orderDetails struct {
+	order
 	Time int `json:"orderedAtTimestamp"`
 	Cost int `json:"cost"`
 }
 
-type OrdersList struct {
-	Orders []Order `json:"orders"`
+type ordersList struct {
+	Orders []order `json:"orders"`
 }
 
-type MenuItem struct {
+type menuItem struct {
 	ID       string `json:"id"`
 	Quantity int    `json:"quantity"`
 }

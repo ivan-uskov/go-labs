@@ -14,6 +14,7 @@ import (
 )
 
 const ServerUrl = ":8000"
+const DSNArgs = "parseTime=true"
 
 func main() {
 	log.SetFormatter(&log.JSONFormatter{})
@@ -56,7 +57,7 @@ func startServer(serverUrl string) *http.Server {
 }
 
 func createDbConn() *sql.DB {
-	dsn := fmt.Sprintf("%s:%s@/%s", os.Getenv("DATABASE_USER"), os.Getenv("DATABASE_PASSWORD"), os.Getenv("DATABASE_NAME"))
+	dsn := fmt.Sprintf("%s:%s@/%s?%s", os.Getenv("DATABASE_USER"), os.Getenv("DATABASE_PASSWORD"), os.Getenv("DATABASE_NAME"), DSNArgs)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		log.Fatal(err)

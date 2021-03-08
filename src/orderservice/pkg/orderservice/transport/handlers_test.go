@@ -9,9 +9,24 @@ import (
 	"testing"
 )
 
+type mocOrderQueryService struct{}
+
+func (m mocOrderQueryService) GetOrders() (*service.OrdersList, error) {
+	return &service.OrdersList{
+		Orders: []service.OrderInfo{
+			{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", MenuItems: []service.MenuItem{{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", Quantity: 0}}},
+		},
+	}, nil
+}
+
+func (m mocOrderQueryService) GetOrderInfo(id string) (*service.OrderInfo, error) {
+	panic("implement me")
+}
+
 func TestOrdersList(t *testing.T) {
+	srv := server{orderQueryService: mocOrderQueryService{}}
 	w := httptest.NewRecorder()
-	getOrdersList(w, nil)
+	srv.getOrdersList(w, nil)
 	response := w.Result()
 	if response.StatusCode != http.StatusOK {
 		t.Errorf("Status code is wrong. Have: %d, want: %d", response.StatusCode, http.StatusOK)

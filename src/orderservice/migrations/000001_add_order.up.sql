@@ -11,5 +11,6 @@ CREATE TABLE `order_item` (
     `order_id` BINARY(16),
     `menu_item_id` BINARY(16),
     `quantity` INTEGER NOT NULL,
-    PRIMARY KEY (order_id, menu_item_id)
+    PRIMARY KEY (order_id, menu_item_id),
+    FOREIGN KEY (`order_id`) REFERENCES `order`(`order_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci

@@ -8,13 +8,15 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
+	"orderservice/pkg/orderservice/query"
 	"orderservice/pkg/orderservice/repository"
 	"orderservice/pkg/orderservice/service"
 	"time"
 )
 
 type server struct {
-	orderService service.OrderService
+	orderService      service.OrderService
+	orderQueryService service.OrderQueryService
 }
 
 func helloWorld(w http.ResponseWriter, _ *http.Request) {
@@ -24,36 +26,33 @@ func helloWorld(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
-func getOrdersList(w http.ResponseWriter, _ *http.Request) {
-	orders := service.OrdersList{
-		Orders: []service.Order{
-			{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", MenuItems: []service.MenuItem{{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", Quantity: 0}}},
-		},
+func (s *server) getOrdersList(w http.ResponseWriter, _ *http.Request) {
+	orders, err := s.orderQueryService.GetOrders()
+	if err != nil {
+		log.Error(err)
+		http.Error(w, "server error", http.StatusInternalServerError)
+		return
 	}
 
 	renderJson(w, orders)
 }
 
-func getOrderInfo(w http.ResponseWriter, r *http.Request) {
+func (s *server) getOrderInfo(w http.ResponseWriter, r *http.Request) {
 	id, found := mux.Vars(r)["ID"]
 	if found {
-		if id == "3fa85f64-5717-4562-b3fc-2c963f66afa6" {
-			order := service.OrderInfo{
-				Order: service.Order{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", MenuItems: []service.MenuItem{{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", Quantity: 0}}},
-				Cost:  1,
-				Time:  1,
-			}
-
-			renderJson(w, order)
+		info, err := s.orderQueryService.GetOrderInfo(id)
+		if err != nil {
+			log.Error(err)
+			http.Error(w, "server error", http.StatusInternalServerError)
+			return
+		}
+		if info != nil {
+			renderJson(w, info)
 			return
 		}
 	}
 
-	w.WriteHeader(http.StatusNotFound)
-	_, err := fmt.Fprint(w, "Not found")
-	if err != nil {
-		log.Error(err)
-	}
+	http.Error(w, "Not Found", http.StatusNotFound)
 }
 
 func (s *server) addOrder(w http.ResponseWriter, r *http.Request) {
@@ -76,7 +75,8 @@ func renderJson(w http.ResponseWriter, v interface{}) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(v); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		http.Error(w, "server error", http.StatusInternalServerError)
 		return
 	}
 }
@@ -119,13 +119,16 @@ func Router(db *sql.DB) http.Handler {
 	r := mux.NewRouter()
 	s := r.PathPrefix("/api/v1").Subrouter()
 	s.HandleFunc("/hello-world", helloWorld).Methods(http.MethodGet)
-	s.HandleFunc("/orders", getOrdersList).Methods(http.MethodGet)
-	s.HandleFunc("/order/{ID:[0-9a-zA-Z]+}", getOrderInfo).Methods(http.MethodGet)
+	s.HandleFunc("/orders", srv.getOrdersList).Methods(http.MethodGet)
+	s.HandleFunc("/order/{ID:[0-9a-zA-Z-]+}", srv.getOrderInfo).Methods(http.MethodGet)
 	s.HandleFunc("/order", srv.addOrder).Methods(http.MethodPost)
 
 	return logMiddleware(r)
 }
 
 func makeServer(db *sql.DB) *server {
-	return &server{orderService: service.NewOrderService(repository.NewOrderRepository(db))}
+	return &server{
+		orderService:      service.NewOrderService(repository.NewOrderRepository(db)),
+		orderQueryService: query.NewOrderQueryService(db),
+	}
 }

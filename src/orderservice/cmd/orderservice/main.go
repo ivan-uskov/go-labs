@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
+	_ "github.com/go-sql-driver/mysql"
 	log "github.com/sirupsen/logrus"
 	"net/http"
-	"orderservice/pkg/orderservice"
+	"orderservice/pkg/orderservice/transport"
 	"os"
 	"os/signal"
 	"syscall"
@@ -41,11 +44,29 @@ func waitForKillSignal(ch <-chan os.Signal) {
 
 func startServer(serverUrl string) *http.Server {
 	log.WithFields(log.Fields{"url": serverUrl}).Info("starting the server")
-	router := orderservice.Router()
+	db := createDbConn()
+	router := transport.Router(db)
 	srv := &http.Server{Addr: serverUrl, Handler: router}
 	go func() {
 		log.Fatal(srv.ListenAndServe())
+		log.Fatal(db.Close())
 	}()
 
 	return srv
+}
+
+func createDbConn() *sql.DB {
+	dsn := fmt.Sprintf("%s:%s@/%s", os.Getenv("DATABASE_USER"), os.Getenv("DATABASE_PASSWORD"), os.Getenv("DATABASE_NAME"))
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err = db.Ping(); err != nil {
+		log.Fatal(err)
+	}
+
+	log.Debugf("Connection to %s established", dsn)
+
+	return db
 }

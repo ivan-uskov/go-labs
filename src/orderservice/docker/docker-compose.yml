@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  database:
+    image: mysql:5.7
+    command: ['mysqld', '--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci', "--init-connect='SET NAMES utf8mb4;'"]
+    container_name: orderservice_db
+    restart: always
+    env_file:
+      - ../.env
+    environment:
+      MYSQL_DATABASE: ${DATABASE_NAME}
+      MYSQL_USER: ${DATABASE_USER}
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DATABASE_ROOT_PASSWORD}
+    volumes:
+      - ../_var/database:/var/lib/mysql
+    ports:
+      - "3306:3306"

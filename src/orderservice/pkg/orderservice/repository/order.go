@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"github.com/google/uuid"
 	"orderservice/pkg/orderservice/model"
 )
 
@@ -25,6 +26,14 @@ func (o *orderRepository) Add(order model.Order) error {
 		}
 
 		return closeTx(nil)
+	})
+}
+
+func (o *orderRepository) Delete(id uuid.UUID) error {
+	return o.withTx(func(tx *sql.Tx, ctx context.Context, closeTx func(error) error) error {
+		_, err := tx.ExecContext(ctx, "UPDATE `order` SET deleted_at = NOW() WHERE BIN_TO_UUID(order_id) = ?", id)
+
+		return closeTx(err)
 	})
 }
 

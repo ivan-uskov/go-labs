@@ -55,6 +55,21 @@ func (s *server) getOrderInfo(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Not Found", http.StatusNotFound)
 }
 
+func (s *server) deleteOrder(w http.ResponseWriter, r *http.Request) {
+	id, found := mux.Vars(r)["ID"]
+	if found {
+		err := s.orderService.Delete(id)
+		if err != nil {
+			log.Error(err)
+			http.Error(w, "server error", http.StatusInternalServerError)
+		}
+
+		return
+	}
+
+	http.Error(w, "Not Found", http.StatusNotFound)
+}
+
 func (s *server) addOrder(w http.ResponseWriter, r *http.Request) {
 	orderRequest := service.AddOrderRequest{}
 	err := jsonFromRequest(r, &orderRequest)
@@ -64,7 +79,7 @@ func (s *server) addOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.orderService.AddOrder(orderRequest)
+	err = s.orderService.Add(orderRequest)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -121,6 +136,7 @@ func Router(db *sql.DB) http.Handler {
 	s.HandleFunc("/hello-world", helloWorld).Methods(http.MethodGet)
 	s.HandleFunc("/orders", srv.getOrdersList).Methods(http.MethodGet)
 	s.HandleFunc("/order/{ID:[0-9a-zA-Z-]+}", srv.getOrderInfo).Methods(http.MethodGet)
+	s.HandleFunc("/order/{ID:[0-9a-zA-Z-]+}", srv.deleteOrder).Methods(http.MethodDelete)
 	s.HandleFunc("/order", srv.addOrder).Methods(http.MethodPost)
 
 	return logMiddleware(r)

@@ -18,7 +18,8 @@ type orderService struct {
 }
 
 type OrderService interface {
-	AddOrder(r AddOrderRequest) error
+	Add(r AddOrderRequest) error
+	Delete(id string) error
 }
 
 func NewOrderService(repo model.OrderRepository) OrderService {
@@ -49,7 +50,16 @@ func validateOrderItems(reqItems []MenuItem) ([]model.MenuItem, error) {
 	return items, nil
 }
 
-func (os *orderService) AddOrder(r AddOrderRequest) error {
+func (os *orderService) Delete(id string) error {
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		return err
+	}
+
+	return os.repo.Delete(uid)
+}
+
+func (os *orderService) Add(r AddOrderRequest) error {
 	items, err := validateOrderItems(r.MenuItems)
 	if err != nil {
 		return err

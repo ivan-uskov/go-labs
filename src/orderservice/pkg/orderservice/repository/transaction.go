@@ -15,10 +15,10 @@ func (o *orderRepository) withTx(fn func(*sql.Tx, context.Context, func(error) e
 
 	closeTx := func(err error) error {
 		if err == nil {
-			log.Error(tx.Commit())
-		} else {
-			log.Error(tx.Rollback())
+			return tx.Commit()
 		}
+
+		log.Error(tx.Rollback())
 		return err
 	}
 

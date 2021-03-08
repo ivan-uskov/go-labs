@@ -13,12 +13,17 @@ type AddOrderRequest struct {
 	MenuItems []MenuItem `json:"menuItems"`
 }
 
+type UpdateOrderRequest struct {
+	MenuItems []MenuItem `json:"menuItems"`
+}
+
 type orderService struct {
 	repo model.OrderRepository
 }
 
 type OrderService interface {
 	Add(r AddOrderRequest) error
+	Update(id string, r UpdateOrderRequest) error
 	Delete(id string) error
 }
 
@@ -50,6 +55,10 @@ func validateOrderItems(reqItems []MenuItem) ([]model.MenuItem, error) {
 	return items, nil
 }
 
+func calculateCost(items []model.MenuItem) int {
+	return 42 * len(items)
+}
+
 func (os *orderService) Delete(id string) error {
 	uid, err := uuid.Parse(id)
 	if err != nil {
@@ -68,9 +77,44 @@ func (os *orderService) Add(r AddOrderRequest) error {
 	err = os.repo.Add(model.Order{
 		ID:        uuid.New(),
 		MenuItems: items,
-		Cost:      42,
+		Cost:      calculateCost(items),
 		OrderedAt: time.Now(),
 	})
+
+	if err != nil {
+		log.Error(err)
+		return errors.New("server error")
+	}
+
+	return nil
+}
+
+func (os *orderService) Update(id string, r UpdateOrderRequest) error {
+	uid, err := uuid.Parse(id)
+	if err != nil {
+		log.Error(err)
+		return errors.New("server error")
+	}
+
+	o, err := os.repo.Get(uid)
+	if err != nil {
+		log.Error(err)
+		return errors.New("server error")
+	}
+
+	if o == nil {
+		return errors.New("order not found")
+	}
+
+	items, err := validateOrderItems(r.MenuItems)
+	if err != nil {
+		return err
+	}
+
+	o.MenuItems = items
+	o.Cost = calculateCost(items)
+
+	err = os.repo.Update(*o)
 
 	if err != nil {
 		log.Error(err)

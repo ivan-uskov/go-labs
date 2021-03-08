@@ -19,5 +19,8 @@ type MenuItem struct {
 
 type OrderRepository interface {
 	Add(order Order) error
+	Update(order Order) error
 	Delete(id uuid.UUID) error
+
+	Get(id uuid.UUID) (*Order, error)
 }

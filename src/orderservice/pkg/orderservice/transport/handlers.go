@@ -39,42 +39,64 @@ func (s *server) getOrdersList(w http.ResponseWriter, _ *http.Request) {
 
 func (s *server) getOrderInfo(w http.ResponseWriter, r *http.Request) {
 	id, found := mux.Vars(r)["ID"]
-	if found {
-		info, err := s.orderQueryService.GetOrderInfo(id)
-		if err != nil {
-			log.Error(err)
-			http.Error(w, "server error", http.StatusInternalServerError)
-			return
-		}
-		if info != nil {
-			renderJson(w, info)
-			return
-		}
+	if !found {
+		http.Error(w, "Not Found", http.StatusNotFound)
+		return
 	}
 
-	http.Error(w, "Not Found", http.StatusNotFound)
+	info, err := s.orderQueryService.GetOrderInfo(id)
+	if err != nil {
+		log.Error(err)
+		http.Error(w, "server error", http.StatusInternalServerError)
+		return
+	}
+
+	if info == nil {
+		http.Error(w, "Not Found", http.StatusNotFound)
+		return
+	}
+
+	renderJson(w, info)
 }
 
 func (s *server) deleteOrder(w http.ResponseWriter, r *http.Request) {
 	id, found := mux.Vars(r)["ID"]
-	if found {
-		err := s.orderService.Delete(id)
-		if err != nil {
-			log.Error(err)
-			http.Error(w, "server error", http.StatusInternalServerError)
-		}
-
+	if !found {
+		http.Error(w, "Not Found", http.StatusNotFound)
 		return
 	}
 
-	http.Error(w, "Not Found", http.StatusNotFound)
+	err := s.orderService.Delete(id)
+	if err != nil {
+		log.Error(err)
+		http.Error(w, "server error", http.StatusInternalServerError)
+	}
+}
+
+func (s *server) updateOrder(w http.ResponseWriter, r *http.Request) {
+	id, found := mux.Vars(r)["ID"]
+	if !found {
+		http.Error(w, "Not Found", http.StatusNotFound)
+		return
+	}
+
+	var orderRequest service.UpdateOrderRequest
+	err := jsonFromRequest(r, &orderRequest)
+	if err != nil {
+		http.Error(w, "Invalid Request", http.StatusBadRequest)
+		return
+	}
+
+	err = s.orderService.Update(id, orderRequest)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
 }
 
 func (s *server) addOrder(w http.ResponseWriter, r *http.Request) {
 	orderRequest := service.AddOrderRequest{}
 	err := jsonFromRequest(r, &orderRequest)
 	if err != nil {
-		log.Debugf("Can't parse request: %s", err)
 		http.Error(w, "Invalid Request", http.StatusBadRequest)
 		return
 	}
@@ -137,6 +159,7 @@ func Router(db *sql.DB) http.Handler {
 	s.HandleFunc("/orders", srv.getOrdersList).Methods(http.MethodGet)
 	s.HandleFunc("/order/{ID:[0-9a-zA-Z-]+}", srv.getOrderInfo).Methods(http.MethodGet)
 	s.HandleFunc("/order/{ID:[0-9a-zA-Z-]+}", srv.deleteOrder).Methods(http.MethodDelete)
+	s.HandleFunc("/order/{ID:[0-9a-zA-Z-]+}", srv.updateOrder).Methods(http.MethodPut)
 	s.HandleFunc("/order", srv.addOrder).Methods(http.MethodPost)
 
 	return logMiddleware(r)

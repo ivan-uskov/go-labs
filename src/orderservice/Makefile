@@ -3,10 +3,7 @@ ifneq (,$(wildcard ./.env))
     export
 endif
 
-run: modules up migrates
-	go run cmd/orderservice/main.go
-
-modules:
+dep:
 	go mod tidy
 
 lint:
@@ -18,12 +15,6 @@ fmt:
 test:
 	go test ./...
 
-up:
-	docker-compose -f docker/docker-compose.yml up -d
-
-down:
-	docker-compose -f docker/docker-compose.yml down
-
 migration:
 	echo -n "Key: "; read MIGRATION_NAME; \
 	docker run --rm -v $(shell pwd)/migrations:/migrations migrate/migrate create -ext sql -dir /migrations -seq "$$MIGRATION_NAME"
@@ -32,3 +23,12 @@ migration:
 migrates:
 	docker run -v $(shell pwd)/migrations:/migrations --network host migrate/migrate \
         -path=/migrations -database mysql://$(DATABASE_USER):$(DATABASE_PASSWORD)@/$(DATABASE_NAME) up
+
+build:
+	docker-compose -f docker/docker-compose.yml build
+
+up:
+	docker-compose -f docker/docker-compose.yml up
+
+down:
+	docker-compose -f docker/docker-compose.yml down

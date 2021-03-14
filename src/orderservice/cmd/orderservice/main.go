@@ -17,7 +17,7 @@ import (
 const appID = "orderservice"
 
 type config struct {
-	ServerUrl         string `envconfig:"server_url"`
+	ServerPort        string `envconfig:"server_port"`
 	DatabaseName      string `envconfig:"database_name"`
 	DatabaseAddress   string `envconfig:"database_address"`
 	DatabaseUser      string `envconfig:"database_user"`
@@ -71,10 +71,10 @@ func waitForKillSignal(ch <-chan os.Signal) {
 }
 
 func startServer(c *config) *http.Server {
-	log.WithFields(log.Fields{"url": c.ServerUrl}).Info("starting the server")
+	log.WithFields(log.Fields{"port": c.ServerPort}).Info("starting the server")
 	db := createDbConn(c)
 	router := transport.Router(db)
-	srv := &http.Server{Addr: c.ServerUrl, Handler: router}
+	srv := &http.Server{Addr: fmt.Sprintf(":%s", c.ServerPort), Handler: router}
 	go func() {
 		log.Fatal(srv.ListenAndServe())
 		log.Fatal(db.Close())

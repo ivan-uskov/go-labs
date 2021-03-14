@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/kelseyhightower/envconfig"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"orderservice/pkg/orderservice/transport"
@@ -13,15 +14,27 @@ import (
 	"syscall"
 )
 
-const ServerUrl = ":8000"
-const DSNArgs = "parseTime=true"
+const appID = "orderservice"
+
+type config struct {
+	ServerUrl         string `envconfig:"server_url"`
+	DatabaseName      string `envconfig:"database_name"`
+	DatabaseAddress   string `envconfig:"database_address"`
+	DatabaseUser      string `envconfig:"database_user"`
+	DatabasePassword  string `envconfig:"database_password"`
+	DatabaseArguments string `envconfig:"database_arguments"`
+}
 
 func main() {
-	log.SetFormatter(&log.JSONFormatter{})
-	log.SetOutput(os.Stdout)
+	c, err := parseConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	setupLogger()
 
 	killSignalChan := getKillSignalChan()
-	srv := startServer(ServerUrl)
+	srv := startServer(c)
 
 	waitForKillSignal(killSignalChan)
 	log.Fatal(srv.Shutdown(context.Background()))
@@ -31,6 +44,20 @@ func getKillSignalChan() chan os.Signal {
 	osKillSignalChan := make(chan os.Signal, 1)
 	signal.Notify(osKillSignalChan, os.Interrupt, syscall.SIGTERM)
 	return osKillSignalChan
+}
+
+func setupLogger() {
+	log.SetFormatter(&log.JSONFormatter{})
+	log.SetOutput(os.Stdout)
+}
+
+func parseConfig() (*config, error) {
+	c := config{}
+	if err := envconfig.Process(appID, &c); err != nil {
+		return nil, err
+	}
+
+	return &c, nil
 }
 
 func waitForKillSignal(ch <-chan os.Signal) {
@@ -43,11 +70,11 @@ func waitForKillSignal(ch <-chan os.Signal) {
 	}
 }
 
-func startServer(serverUrl string) *http.Server {
-	log.WithFields(log.Fields{"url": serverUrl}).Info("starting the server")
-	db := createDbConn()
+func startServer(c *config) *http.Server {
+	log.WithFields(log.Fields{"url": c.ServerUrl}).Info("starting the server")
+	db := createDbConn(c)
 	router := transport.Router(db)
-	srv := &http.Server{Addr: serverUrl, Handler: router}
+	srv := &http.Server{Addr: c.ServerUrl, Handler: router}
 	go func() {
 		log.Fatal(srv.ListenAndServe())
 		log.Fatal(db.Close())
@@ -56,8 +83,13 @@ func startServer(serverUrl string) *http.Server {
 	return srv
 }
 
-func createDbConn() *sql.DB {
-	dsn := fmt.Sprintf("%s:%s@/%s?%s", os.Getenv("DATABASE_USER"), os.Getenv("DATABASE_PASSWORD"), os.Getenv("DATABASE_NAME"), DSNArgs)
+func createDbConn(c *config) *sql.DB {
+	arguments := c.DatabaseArguments
+	if len(arguments) > 0 {
+		arguments = "?" + arguments
+	}
+
+	dsn := fmt.Sprintf("%s:%s@%s/%s%s", c.DatabaseUser, c.DatabasePassword, c.DatabaseAddress, c.DatabaseName, arguments)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		log.Fatal(err)

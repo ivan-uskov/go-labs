@@ -24,7 +24,7 @@ migrates:
 	docker run -v $(shell pwd)/migrations:/migrations --network host migrate/migrate \
         -path=/migrations -database mysql://$(DATABASE_USER):$(DATABASE_PASSWORD)@/$(DATABASE_NAME) up
 
-build:
+build: fmt lint
 	docker-compose -f docker/docker-compose.yml build
 
 up:

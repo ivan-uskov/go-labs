@@ -5,21 +5,21 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"orderservice/pkg/orderservice/service"
+	"orderservice/pkg/orderservice/application/data"
 	"testing"
 )
 
 type mocOrderQueryService struct{}
 
-func (m mocOrderQueryService) GetOrders() (*service.OrdersList, error) {
-	return &service.OrdersList{
-		Orders: []service.OrderInfo{
-			{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", MenuItems: []service.MenuItem{{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", Quantity: 0}}},
+func (m mocOrderQueryService) GetOrders() (*data.OrdersList, error) {
+	return &data.OrdersList{
+		Orders: []data.OrderInfo{
+			{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", MenuItems: []data.MenuItem{{ID: "3fa85f64-5717-4562-b3fc-2c963f66afa6", Quantity: 0}}},
 		},
 	}, nil
 }
 
-func (m mocOrderQueryService) GetOrderInfo(id string) (*service.OrderInfo, error) {
+func (m mocOrderQueryService) GetOrderInfo(id string) (*data.OrderInfo, error) {
 	panic("implement me")
 }
 
@@ -38,7 +38,7 @@ func TestOrdersList(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	items := service.OrdersList{}
+	items := data.OrdersList{}
 	if err = json.Unmarshal(jsonString, &items); err != nil {
 		t.Errorf("Can't parse json: %s response with error %v", jsonString, err)
 	}

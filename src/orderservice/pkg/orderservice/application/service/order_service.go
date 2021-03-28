@@ -1,20 +1,20 @@
 package service
 
 import (
-	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
+	"orderservice/pkg/orderservice/application/data"
 	"orderservice/pkg/orderservice/model"
 	"time"
 )
 
 type AddOrderRequest struct {
-	MenuItems []MenuItem `json:"menuItems"`
+	MenuItems []data.MenuItem `json:"menuItems"`
 }
 
 type UpdateOrderRequest struct {
-	MenuItems []MenuItem `json:"menuItems"`
+	MenuItems []data.MenuItem `json:"menuItems"`
 }
 
 type orderService struct {
@@ -31,7 +31,7 @@ func NewOrderService(repo model.OrderRepository) OrderService {
 	return &orderService{repo: repo}
 }
 
-func validateOrderItems(reqItems []MenuItem) ([]model.MenuItem, error) {
+func validateOrderItems(reqItems []data.MenuItem) ([]model.MenuItem, error) {
 	itemIds := map[string]bool{}
 	items := make([]model.MenuItem, len(reqItems))
 	for i, item := range reqItems {
@@ -62,10 +62,17 @@ func calculateCost(items []model.MenuItem) int {
 func (os *orderService) Delete(id string) error {
 	uid, err := uuid.Parse(id)
 	if err != nil {
-		return err
+		log.Debug(err)
+		return fmt.Errorf("invalid uuid: %s", id)
 	}
 
-	return os.repo.Delete(uid)
+	err = os.repo.Delete(uid)
+	if err != nil {
+		log.Error(err)
+		return data.InternalError
+	}
+
+	return nil
 }
 
 func (os *orderService) Add(r AddOrderRequest) error {
@@ -83,7 +90,7 @@ func (os *orderService) Add(r AddOrderRequest) error {
 
 	if err != nil {
 		log.Error(err)
-		return errors.New("server error")
+		return data.InternalError
 	}
 
 	return nil
@@ -92,18 +99,18 @@ func (os *orderService) Add(r AddOrderRequest) error {
 func (os *orderService) Update(id string, r UpdateOrderRequest) error {
 	uid, err := uuid.Parse(id)
 	if err != nil {
-		log.Error(err)
-		return errors.New("server error")
+		log.Debug(err)
+		return fmt.Errorf("invalid uuid: %s", id)
 	}
 
 	o, err := os.repo.Get(uid)
 	if err != nil {
 		log.Error(err)
-		return errors.New("server error")
+		return data.InternalError
 	}
 
 	if o == nil {
-		return errors.New("order not found")
+		return fmt.Errorf("order %s not found", id)
 	}
 
 	items, err := validateOrderItems(r.MenuItems)
@@ -118,7 +125,7 @@ func (os *orderService) Update(id string, r UpdateOrderRequest) error {
 
 	if err != nil {
 		log.Error(err)
-		return errors.New("server error")
+		return data.InternalError
 	}
 
 	return nil

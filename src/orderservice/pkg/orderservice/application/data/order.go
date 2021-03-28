@@ -1,6 +1,9 @@
-package service
+package data
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 type MenuItem struct {
 	ID       string `json:"id"`
@@ -17,3 +20,5 @@ type OrderInfo struct {
 type OrdersList struct {
 	Orders []OrderInfo `json:"orders"`
 }
+
+var InternalError error = errors.New("internal error")

@@ -8,15 +8,17 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
-	"orderservice/pkg/orderservice/query"
-	"orderservice/pkg/orderservice/repository"
-	"orderservice/pkg/orderservice/service"
+	"orderservice/pkg/orderservice/application/data"
+	query2 "orderservice/pkg/orderservice/application/query"
+	"orderservice/pkg/orderservice/application/service"
+	"orderservice/pkg/orderservice/infrastructure/query"
+	"orderservice/pkg/orderservice/infrastructure/repository"
 	"time"
 )
 
 type server struct {
 	orderService      service.OrderService
-	orderQueryService service.OrderQueryService
+	orderQueryService query2.OrderQueryService
 }
 
 func helloWorld(w http.ResponseWriter, _ *http.Request) {
@@ -26,11 +28,18 @@ func helloWorld(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
+func processError(w http.ResponseWriter, e error) {
+	if e == data.InternalError {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	} else {
+		http.Error(w, e.Error(), http.StatusBadRequest)
+	}
+}
+
 func (s *server) getOrdersList(w http.ResponseWriter, _ *http.Request) {
 	orders, err := s.orderQueryService.GetOrders()
 	if err != nil {
-		log.Error(err)
-		http.Error(w, "server error", http.StatusInternalServerError)
+		processError(w, err)
 		return
 	}
 
@@ -46,8 +55,7 @@ func (s *server) getOrderInfo(w http.ResponseWriter, r *http.Request) {
 
 	info, err := s.orderQueryService.GetOrderInfo(id)
 	if err != nil {
-		log.Error(err)
-		http.Error(w, "server error", http.StatusInternalServerError)
+		processError(w, err)
 		return
 	}
 
@@ -69,7 +77,7 @@ func (s *server) deleteOrder(w http.ResponseWriter, r *http.Request) {
 	err := s.orderService.Delete(id)
 	if err != nil {
 		log.Error(err)
-		http.Error(w, "server error", http.StatusInternalServerError)
+		processError(w, err)
 	}
 }
 
@@ -89,7 +97,7 @@ func (s *server) updateOrder(w http.ResponseWriter, r *http.Request) {
 
 	err = s.orderService.Update(id, orderRequest)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		processError(w, err)
 	}
 }
 
@@ -104,7 +112,7 @@ func (s *server) addOrder(w http.ResponseWriter, r *http.Request) {
 	err = s.orderService.Add(orderRequest)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		processError(w, err)
 	}
 }
 

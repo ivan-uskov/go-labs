@@ -3,7 +3,9 @@ package query
 import (
 	"database/sql"
 	"fmt"
-	"orderservice/pkg/orderservice/service"
+	log "github.com/sirupsen/logrus"
+	"orderservice/pkg/orderservice/application/data"
+	"orderservice/pkg/orderservice/application/query"
 	"strconv"
 	"strings"
 	"time"
@@ -13,17 +15,17 @@ type orderQueryService struct {
 	db *sql.DB
 }
 
-func NewOrderQueryService(db *sql.DB) service.OrderQueryService {
+func NewOrderQueryService(db *sql.DB) query.OrderQueryService {
 	return &orderQueryService{db: db}
 }
 
-func parseMenuItems(itemsStr string) ([]service.MenuItem, error) {
+func parseMenuItems(itemsStr string) ([]data.MenuItem, error) {
 	if len(itemsStr) == 0 {
-		return make([]service.MenuItem, 0), nil
+		return make([]data.MenuItem, 0), nil
 	}
 
 	items := strings.Split(itemsStr, ",")
-	result := make([]service.MenuItem, len(items))
+	result := make([]data.MenuItem, len(items))
 	for i, pairStr := range items {
 		pair := strings.Split(pairStr, "=")
 		if len(pair) != 2 {
@@ -35,13 +37,13 @@ func parseMenuItems(itemsStr string) ([]service.MenuItem, error) {
 			return nil, fmt.Errorf("invalid quantity: %s", pair[1])
 		}
 
-		result[i] = service.MenuItem{ID: pair[0], Quantity: quantity}
+		result[i] = data.MenuItem{ID: pair[0], Quantity: quantity}
 	}
 
 	return result, nil
 }
 
-func parseOrder(r *sql.Rows) (*service.OrderInfo, error) {
+func parseOrder(r *sql.Rows) (*data.OrderInfo, error) {
 	var orderId string
 	var cost int
 	var createdAt time.Time
@@ -57,7 +59,7 @@ func parseOrder(r *sql.Rows) (*service.OrderInfo, error) {
 		return nil, err
 	}
 
-	return &service.OrderInfo{
+	return &data.OrderInfo{
 		ID:        orderId,
 		MenuItems: menuItems,
 		OrderedAt: createdAt,
@@ -65,7 +67,7 @@ func parseOrder(r *sql.Rows) (*service.OrderInfo, error) {
 	}, nil
 }
 
-func (qs *orderQueryService) GetOrders() (*service.OrdersList, error) {
+func (qs *orderQueryService) GetOrders() (*data.OrdersList, error) {
 	rows, err := qs.db.Query("" +
 		"SELECT " +
 		"BIN_TO_UUID(o.order_id) AS order_id, " +
@@ -78,24 +80,26 @@ func (qs *orderQueryService) GetOrders() (*service.OrdersList, error) {
 		"GROUP BY o.order_id")
 
 	if err != nil {
-		return nil, err
+		log.Error(err)
+		return nil, data.InternalError
 	}
 	defer rows.Close()
 
-	orders := make([]service.OrderInfo, 0)
+	orders := make([]data.OrderInfo, 0)
 	for rows.Next() {
 		order, err := parseOrder(rows)
 		if err != nil {
-			return nil, err
+			log.Error(err)
+			return nil, data.InternalError
 		}
 
 		orders = append(orders, *order)
 	}
 
-	return &service.OrdersList{Orders: orders}, nil
+	return &data.OrdersList{Orders: orders}, nil
 }
 
-func (qs *orderQueryService) GetOrderInfo(id string) (*service.OrderInfo, error) {
+func (qs *orderQueryService) GetOrderInfo(id string) (*data.OrderInfo, error) {
 	rows, err := qs.db.Query(""+
 		"SELECT "+
 		"BIN_TO_UUID(o.order_id) AS order_id, "+
@@ -108,14 +112,16 @@ func (qs *orderQueryService) GetOrderInfo(id string) (*service.OrderInfo, error)
 		"GROUP BY o.order_id", id)
 
 	if err != nil {
-		return nil, err
+		log.Error(err)
+		return nil, data.InternalError
 	}
 	defer rows.Close()
 
 	if rows.Next() {
 		order, err := parseOrder(rows)
 		if err != nil {
-			return nil, err
+			log.Error(err)
+			return nil, data.InternalError
 		}
 
 		return order, nil
